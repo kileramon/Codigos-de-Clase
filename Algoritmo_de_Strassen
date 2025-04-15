@@ -1,0 +1,161 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+void generarMatriz(int **matriz, int n) {
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            matriz[i][j] = rand() % 10;
+}
+
+void sumarMatrices(int **A, int **B, int **res, int n) {
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            res[i][j] = A[i][j] + B[i][j];
+}
+
+void restarMatrices(int **A, int **B, int **res, int n) {
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            res[i][j] = A[i][j] - B[i][j];
+}
+
+void multiplicarStrassen(int **A, int **B, int **C, int n) {
+    if (n == 1) {
+        C[0][0] = A[0][0] * B[0][0];
+        return;
+    }
+
+    int k = n / 2;
+
+    int **A11 = malloc(k * sizeof(int*)), **A12 = malloc(k * sizeof(int*));
+    int **A21 = malloc(k * sizeof(int*)), **A22 = malloc(k * sizeof(int*));
+    int **B11 = malloc(k * sizeof(int*)), **B12 = malloc(k * sizeof(int*));
+    int **B21 = malloc(k * sizeof(int*)), **B22 = malloc(k * sizeof(int*));
+    int **C11 = malloc(k * sizeof(int*)), **C12 = malloc(k * sizeof(int*));
+    int **C21 = malloc(k * sizeof(int*)), **C22 = malloc(k * sizeof(int*));
+    int **M1 = malloc(k * sizeof(int*)), **M2 = malloc(k * sizeof(int*));
+    int **M3 = malloc(k * sizeof(int*)), **M4 = malloc(k * sizeof(int*));
+    int **M5 = malloc(k * sizeof(int*)), **M6 = malloc(k * sizeof(int*));
+    int **M7 = malloc(k * sizeof(int*));
+    int **T1 = malloc(k * sizeof(int*)), **T2 = malloc(k * sizeof(int*));
+
+    for (int i = 0; i < k; i++) {
+        A11[i] = A[i];
+        A12[i] = A[i] + k;
+        A21[i] = A[i + k];
+        A22[i] = A[i + k] + k;
+        B11[i] = B[i];
+        B12[i] = B[i] + k;
+        B21[i] = B[i + k];
+        B22[i] = B[i + k] + k;
+        C11[i] = C[i];
+        C12[i] = C[i] + k;
+        C21[i] = C[i + k];
+        C22[i] = C[i + k] + k;
+
+        M1[i] = malloc(k * sizeof(int));
+        M2[i] = malloc(k * sizeof(int));
+        M3[i] = malloc(k * sizeof(int));
+        M4[i] = malloc(k * sizeof(int));
+        M5[i] = malloc(k * sizeof(int));
+        M6[i] = malloc(k * sizeof(int));
+        M7[i] = malloc(k * sizeof(int));
+        T1[i] = malloc(k * sizeof(int));
+        T2[i] = malloc(k * sizeof(int));
+    }
+
+    // M1 = (A11 + A22) * (B11 + B22)
+    sumarMatrices(A11, A22, T1, k);
+    sumarMatrices(B11, B22, T2, k);
+    multiplicarStrassen(T1, T2, M1, k);
+
+    // M2 = (A21 + A22) * B11
+    sumarMatrices(A21, A22, T1, k);
+    multiplicarStrassen(T1, B11, M2, k);
+
+    // M3 = A11 * (B12 - B22)
+    restarMatrices(B12, B22, T1, k);
+    multiplicarStrassen(A11, T1, M3, k);
+
+    // M4 = A22 * (B21 - B11)
+    restarMatrices(B21, B11, T1, k);
+    multiplicarStrassen(A22, T1, M4, k);
+
+    // M5 = (A11 + A12) * B22
+    sumarMatrices(A11, A12, T1, k);
+    multiplicarStrassen(T1, B22, M5, k);
+
+    // M6 = (A21 - A11) * (B11 + B12)
+    restarMatrices(A21, A11, T1, k);
+    sumarMatrices(B11, B12, T2, k);
+    multiplicarStrassen(T1, T2, M6, k);
+
+    // M7 = (A12 - A22) * (B21 + B22)
+    restarMatrices(A12, A22, T1, k);
+    sumarMatrices(B21, B22, T2, k);
+    multiplicarStrassen(T1, T2, M7, k);
+
+    // C11 = M1 + M4 - M5 + M7
+    sumarMatrices(M1, M4, T1, k);
+    restarMatrices(T1, M5, T2, k);
+    sumarMatrices(T2, M7, C11, k);
+
+    // C12 = M3 + M5
+    sumarMatrices(M3, M5, C12, k);
+
+    // C21 = M2 + M4
+    sumarMatrices(M2, M4, C21, k);
+
+    // C22 = M1 - M2 + M3 + M6
+    restarMatrices(M1, M2, T1, k);
+    sumarMatrices(T1, M3, T2, k);
+    sumarMatrices(T2, M6, C22, k);
+
+    for (int i = 0; i < k; i++) {
+        free(M1[i]); free(M2[i]); free(M3[i]); free(M4[i]);
+        free(M5[i]); free(M6[i]); free(M7[i]);
+        free(T1[i]); free(T2[i]);
+    }
+    free(M1); free(M2); free(M3); free(M4);
+    free(M5); free(M6); free(M7);
+    free(T1); free(T2);
+    free(A11); free(A12); free(A21); free(A22);
+    free(B11); free(B12); free(B21); free(B22);
+    free(C11); free(C12); free(C21); free(C22);
+}
+
+int main() {
+    int n;
+    printf("Ingresa el tamanio de la matriz (potencia de 2): ");
+    scanf("%d", &n);
+
+    int **A = malloc(n * sizeof(int *));
+    int **B = malloc(n * sizeof(int *));
+    int **C = malloc(n * sizeof(int *));
+    for (int i = 0; i < n; i++) {
+        A[i] = malloc(n * sizeof(int));
+        B[i] = malloc(n * sizeof(int));
+        C[i] = malloc(n * sizeof(int));
+    }
+
+    srand(time(NULL));
+    generarMatriz(A, n);
+    generarMatriz(B, n);
+
+    clock_t inicio = clock();
+    multiplicarStrassen(A, B, C, n);
+    clock_t fin = clock();
+
+    double tiempo = (double)(fin - inicio) / CLOCKS_PER_SEC;
+    printf("Tiempo de ejecucion (Strassen): %.6f segundos\n", tiempo);
+
+    for (int i = 0; i < n; i++) {
+        free(A[i]);
+        free(B[i]);
+        free(C[i]);
+    }
+    free(A); free(B); free(C);
+
+    return 0;
+}
