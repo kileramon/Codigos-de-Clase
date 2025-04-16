@@ -64,7 +64,7 @@ int main() {
     printf("\n--- RESULTADO ---\n");
     printf("Fecha de nacimiento: %02d/%02d/%d\n", dia, mes, anio);
     printf("Valor calculado de K: %d\n", K);
-    printf("Mínimo número de términos Fibonacci distintos y no consecutivos: %d\n", minTerminos);
+    printf("Minimo numero de terminos Fibonacci distintos y no consecutivos: %d\n", minTerminos);
 
     return 0;
 }
