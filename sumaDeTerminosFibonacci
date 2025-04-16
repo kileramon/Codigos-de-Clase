@@ -1,0 +1,70 @@
+//Adrian Mendoza Hernández
+//Análisis de diseño de algoritmos
+//3CV4
+
+#include <stdio.h>
+#include <stdbool.h>
+
+// Verifica si una posición es un número primo
+bool esPrimo(int n) {
+    if (n < 2) return false;
+    for (int i = 2; i * i <= n; i++)
+        if (n % i == 0) return false;
+    return true;
+}
+
+// Genera la secuencia de Fibonacci sin posiciones primas
+int generarFibonacciFiltrado(int fib[], int limite) {
+    fib[0] = 0;
+    fib[1] = 1;
+    int count = 2;
+    int i = 2;
+    while (1) {
+        int siguiente = fib[count - 1] + fib[count - 2];
+        if (siguiente > limite)
+            break;
+        if (!esPrimo(i)) {
+            fib[count++] = siguiente;
+        }
+        i++;
+    }
+    return count;
+}
+
+// Encuentra el mínimo número de términos cuya suma sea igual a K
+int encontrarMinimosTerminos(int fib[], int n, int K) {
+    int cuenta = 0;
+    for (int i = n - 1; i >= 0 && K > 0; i--) {
+        if (fib[i] <= K) {
+            K -= fib[i];
+            cuenta++;
+        }
+    }
+    return cuenta;
+}
+
+int main() {
+    int dia, mes, anio;
+
+    
+    printf("Ingresa tu fecha de nacimiento (día mes año): ");
+    scanf("%d %d %d", &dia, &mes, &anio);
+
+    // Calcular K
+    int K = (dia * 100) + (mes * 10) + (anio % 100);
+
+    // Generar Fibonacci filtrado
+    int fib[100];
+    int n = generarFibonacciFiltrado(fib, K);
+
+    // Resolver
+    int minTerminos = encontrarMinimosTerminos(fib, n, K);
+
+    
+    printf("\n--- RESULTADO ---\n");
+    printf("Fecha de nacimiento: %02d/%02d/%d\n", dia, mes, anio);
+    printf("Valor calculado de K: %d\n", K);
+    printf("Mínimo número de términos Fibonacci distintos y no consecutivos: %d\n", minTerminos);
+
+    return 0;
+}
