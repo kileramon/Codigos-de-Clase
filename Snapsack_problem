@@ -1,0 +1,139 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// Estructura para representar un objeto
+struct Objeto {
+    string nombre;
+    int peso;
+    int valor;
+};
+
+// Función para mostrar menú de objetos
+void mostrarMenu(const vector<Objeto>& objetos) {
+    cout << "\n--- MENU DE OBJETOS ---\n";
+    for (size_t i = 0; i < objetos.size(); ++i) {
+        cout << i + 1 << ". " << objetos[i].nombre
+             << " (Peso: " << objetos[i].peso
+             << ", Valor: $" << objetos[i].valor << ")\n";
+    }
+    cout << "5. Optimizar resultado automaticamente\n";
+    cout << "0. Terminar seleccion\n";
+}
+
+// Función para mostrar contenido actual de la mochila
+void mostrarMochila(const vector<Objeto>& mochila, int pesoActual, int valorTotal, int capacidad) {
+    cout << "\n--- MOCHILA ---\n";
+    if (mochila.empty()) {
+        cout << "Mochila vacia.\n";
+    } else {
+        for (const auto& obj : mochila) {
+            cout << "- " << obj.nombre << " (Peso: " << obj.peso << ", Valor: $" << obj.valor << ")\n";
+        }
+    }
+    cout << "Peso total: " << pesoActual << "/" << capacidad << "\n";
+    cout << "Valor total: $" << valorTotal << "\n";
+}
+
+// Función para optimizar la mochila automáticamente (problema de la mochila 0/1)
+void optimizarMochila(const vector<Objeto>& objetos, int capacidad) {
+    int n = objetos.size();
+    vector<vector<int>> dp(n + 1, vector<int>(capacidad + 1, 0));
+
+    // Llenar tabla DP
+    for (int i = 1; i <= n; ++i) {
+        for (int w = 1; w <= capacidad; ++w) {
+            if (objetos[i - 1].peso <= w) {
+                dp[i][w] = max(dp[i - 1][w],
+                               objetos[i - 1].valor + dp[i - 1][w - objetos[i - 1].peso]);
+            } else {
+                dp[i][w] = dp[i - 1][w];
+            }
+        }
+    }
+
+    // Recuperar los objetos seleccionados
+    vector<Objeto> seleccionados;
+    int w = capacidad;
+    for (int i = n; i > 0 && w > 0; --i) {
+        if (dp[i][w] != dp[i - 1][w]) {
+            seleccionados.push_back(objetos[i - 1]);
+            w -= objetos[i - 1].peso;
+        }
+    }
+
+    // Mostrar resultado
+    int pesoTotal = 0, valorTotal = dp[n][capacidad];
+    for (const auto& obj : seleccionados) pesoTotal += obj.peso;
+
+    cout << "\n Mejor combinacion encontrada:\n";
+    mostrarMochila(seleccionados, pesoTotal, valorTotal, capacidad);
+}
+
+int main() {
+    const int capacidad = 4;  // Capacidad máxima de la mochila
+
+    // Lista de objetos disponibles
+    vector<Objeto> objetos = {
+        {"Guitarra", 1, 1500},
+        {"Estereo", 4, 3000},
+        {"Laptop", 3, 2000},
+        {"iPhone", 1, 2000}
+    };
+
+    while (true) {
+        vector<Objeto> mochila;
+        int pesoActual = 0;
+        int valorTotal = 0;
+
+        cout << "\n** MOCHILA INTERACTIVA **\n";
+        while (true) {
+            mostrarMenu(objetos);
+            mostrarMochila(mochila, pesoActual, valorTotal, capacidad);
+
+            cout << "\nElige una opcion: ";
+            int opcion;
+            cin >> opcion;
+
+            if (opcion == 0) break;
+
+            if (opcion == 5) {
+                optimizarMochila(objetos, capacidad);
+                break;
+            }
+
+            if (opcion < 1 || opcion > objetos.size()) {
+                cout << "Opcion invalida. Intenta de nuevo.\n";
+                continue;
+            }
+
+            const Objeto& seleccionado = objetos[opcion - 1];
+
+            if (pesoActual + seleccionado.peso <= capacidad) {
+                mochila.push_back(seleccionado);
+                pesoActual += seleccionado.peso;
+                valorTotal += seleccionado.valor;
+                cout << "✅ " << seleccionado.nombre << " agregado a la mochila.\n";
+            } else {
+                cout << "❌ ¡No cabe ese objeto! Se supera la capacidad.\n";
+                char reiniciar;
+                cout << "¿Deseas reiniciar la mochila? (s/n): ";
+                cin >> reiniciar;
+                if (reiniciar == 's' || reiniciar == 'S') {
+                    cout << "\n Reiniciando mochila...\n";
+                    break;
+                }
+            }
+        }
+
+        char otraVez;
+        cout << "\n¿Quieres intentar con otra combinacion? (s/n): ";
+        cin >> otraVez;
+        if (otraVez != 's' && otraVez != 'S') break;
+    }
+
+    cout << "\n ¡Gracias por usar el programa de la mochila!\n";
+    return 0;
+}
