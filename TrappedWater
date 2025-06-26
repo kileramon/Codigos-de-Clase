@@ -1,0 +1,61 @@
+//Adrian Mendoza Hernández
+//Análisis de diseño de algoritmos
+//3CV4
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int trap(int* height, int heightSize) {
+    int left = 0, right = heightSize - 1;
+    int leftMax = 0, rightMax = 0;
+    int water = 0;
+
+    while (left < right) {
+        if (height[left] < height[right]) {
+            if (height[left] >= leftMax)
+                leftMax = height[left];
+            else
+                water += leftMax - height[left];
+            left++;
+        } else {
+            if (height[right] >= rightMax)
+                rightMax = height[right];
+            else
+                water += rightMax - height[right];
+            right--;
+        }
+    }
+
+    return water;
+}
+
+int main() {
+    // Ejemplo incluido
+    int ejemplo[] = {0,1,0,2,1,0,1,3,2,1,2,1};
+    int tamañoEjemplo = sizeof(ejemplo) / sizeof(ejemplo[0]);
+    int resultadoEjemplo = trap(ejemplo, tamañoEjemplo);
+    printf("Ejemplo: altura = {0,1,0,2,1,0,1,3,2,1,2,1}\n");
+    printf("Agua acumulada en el ejemplo: %d\n\n", resultadoEjemplo);
+
+    // Entrada del usuario
+    int n;
+    printf("Ingresa la cantidad de barras (tamaño del arreglo): ");
+    scanf("%d", &n);
+
+    int* height = (int*) malloc(n * sizeof(int));
+    if (height == NULL) {
+        printf("Error al asignar memoria.\n");
+        return 1;
+    }
+
+    printf("Ingresa las alturas (separadas por espacio):\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &height[i]);
+    }
+
+    int resultado = trap(height, n);
+    printf("Agua acumulada: %d\n", resultado);
+
+    free(height);
+    return 0;
+}
