@@ -1,0 +1,191 @@
+//Adrian Mendoza Hernández
+//Análisis de diseño de algoritmos
+//3CV4
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <map>
+#include <queue>
+#include <iomanip>
+#include <sstream>
+
+// --- Definicion de nodo de arbol Huffman ---
+struct Nodo {
+    char simbolo;
+    int frecuencia;
+    Nodo* izquierda;
+    Nodo* derecha;
+
+    Nodo(char s, int f) : simbolo(s), frecuencia(f), izquierda(nullptr), derecha(nullptr) {}
+};
+
+struct CompararNodos {
+    bool operator()(Nodo* a, Nodo* b) {
+        return a->frecuencia > b->frecuencia;
+    }
+};
+
+// --- Construccion del arbol ---
+Nodo* construirArbolHuffman(const std::map<char, int>& frecuencias) {
+    std::priority_queue<Nodo*, std::vector<Nodo*>, CompararNodos> cola;
+
+    for (auto& par : frecuencias) {
+        cola.push(new Nodo(par.first, par.second));
+    }
+
+    while (cola.size() > 1) {
+        Nodo* izq = cola.top(); cola.pop();
+        Nodo* der = cola.top(); cola.pop();
+
+        Nodo* nuevo = new Nodo('\0', izq->frecuencia + der->frecuencia);
+        nuevo->izquierda = izq;
+        nuevo->derecha = der;
+
+        cola.push(nuevo);
+    }
+
+    return cola.top();
+}
+
+// --- Generacion de codigos ---
+void generarCodigos(Nodo* raiz, const std::string& codigo, std::map<char, std::string>& codigos, std::ostream& salida) {
+    if (!raiz) return;
+
+    if (raiz->simbolo != '\0') {
+        codigos[raiz->simbolo] = codigo;
+        salida << "'" << (raiz->simbolo == '\n' ? "\\n" : std::string(1, raiz->simbolo)) << "': " << codigo << "\n";
+    }
+
+    generarCodigos(raiz->izquierda, codigo + "0", codigos, salida);
+    generarCodigos(raiz->derecha, codigo + "1", codigos, salida);
+}
+
+// --- Impresion del arbol de Huffman ---
+void imprimirArbol(Nodo* nodo, const std::string& prefijo = "", bool esIzquierda = true) {
+    if (!nodo) return;
+
+    std::cout << prefijo;
+    std::cout << (esIzquierda ? "|--" : "\\--");
+
+    if (nodo->simbolo != '\0') {
+        if (nodo->simbolo == '\n') std::cout << "'\\n'";
+        else if (nodo->simbolo == ' ') std::cout << "' '";
+        else std::cout << "'" << nodo->simbolo << "'";
+    } else {
+        std::cout << "*";
+    }
+
+    std::cout << " (" << nodo->frecuencia << ")\n";
+
+    if (nodo->izquierda || nodo->derecha) {
+        imprimirArbol(nodo->izquierda, prefijo + (esIzquierda ? "|   " : "    "), true);
+        imprimirArbol(nodo->derecha,  prefijo + (esIzquierda ? "|   " : "    "), false);
+    }
+}
+
+// --- Decodificacion desde codificado.txt ---
+std::string decodificar(const std::string& binario, Nodo* raiz) {
+    std::string resultado;
+    Nodo* actual = raiz;
+
+    for (char bit : binario) {
+        if (bit == '0') actual = actual->izquierda;
+        else if (bit == '1') actual = actual->derecha;
+
+        if (actual->izquierda == nullptr && actual->derecha == nullptr) {
+            resultado += actual->simbolo;
+            actual = raiz;
+        }
+    }
+
+    return resultado;
+}
+
+int main() {
+    std::ifstream archivo("palabras.txt");
+    std::string contenido, linea;
+
+    if (!archivo) {
+        std::cerr << "No se pudo abrir el archivo.\n";
+        return 1;
+    }
+
+    while (getline(archivo, linea)) {
+        contenido += linea + '\n';
+    }
+    archivo.close();
+
+    std::map<char, int> frecuencias;
+    for (char c : contenido) {
+        if (c != '\r') {
+            frecuencias[c]++;
+        }
+    }
+
+    std::cout << "Frecuencias:\n";
+    for (const auto& par : frecuencias) {
+        if (par.first == '\n') std::cout << "'\\n': " << par.second << "\n";
+        else if (par.first == ' ') std::cout << "' ' : " << par.second << "\n";
+        else std::cout << "'" << par.first << "': " << par.second << "\n";
+    }
+
+    Nodo* raiz = construirArbolHuffman(frecuencias);
+
+    std::ofstream archivoCodigos("codigos.txt");
+    if (!archivoCodigos) {
+        std::cerr << "No se pudo crear codigos.txt\n";
+        return 1;
+    }
+
+    std::cout << "\nEstructura del arbol de Huffman:\n";
+    imprimirArbol(raiz);
+
+    std::map<char, std::string> codigos;
+    std::cout << "\nCodigos de Huffman:\n";
+    generarCodigos(raiz, "", codigos, std::cout);
+    generarCodigos(raiz, "", codigos, archivoCodigos);
+    archivoCodigos.close();
+    std::cout << "\nCodigos guardados en codigos.txt\n";
+
+    // Codificacion
+    std::string contenidoCodificado;
+    for (char c : contenido) {
+        contenidoCodificado += codigos[c];
+    }
+
+    std::ofstream archivoCodificado("codificado.txt");
+    if (!archivoCodificado) {
+        std::cerr << "No se pudo crear codificado.txt\n";
+        return 1;
+    }
+    archivoCodificado << contenidoCodificado;
+    archivoCodificado.close();
+    std::cout << "\nContenido codificado guardado en codificado.txt\n";
+
+    // Tasa de compresion
+    int bitsOriginal = contenido.size() * 8;
+    int bitsCodificados = contenidoCodificado.size();
+    double tasa = (double)bitsCodificados / bitsOriginal;
+
+    std::cout << "\n--- Tasa de compresion ---\n";
+    std::cout << "Tamano original:   " << bitsOriginal << " bits\n";
+    std::cout << "Tamano comprimido: " << bitsCodificados << " bits\n";
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << "Tasa de compresion: " << tasa << "\n";
+
+    // Decodificacion
+    std::ifstream archivoCodificadoIn("codificado.txt");
+    std::string codificadoBinario((std::istreambuf_iterator<char>(archivoCodificadoIn)), std::istreambuf_iterator<char>());
+    archivoCodificadoIn.close();
+
+    std::string textoDecodificado = decodificar(codificadoBinario, raiz);
+
+    std::ofstream archivoDecodificado("decodificado.txt");
+    archivoDecodificado << textoDecodificado;
+    archivoDecodificado.close();
+
+    std::cout << "\nTexto decodificado guardado en decodificado.txt\n";
+
+    return 0;
+}
